@@ -68,16 +68,8 @@ var adapters = [
     minReplicas: 1
     maxReplicas: 8
     scaleRule: {
-      name: 'eventhub-scale'
-      custom: {
-        type: 'azure-eventhub'
-        metadata: {
-          eventHubNamespace: eventHubNamespaceFqdn
-          eventHubName: eventHubName
-          consumerGroup: 'cg-d365'
-          unprocessedEventThreshold: '64'
-        }
-      }
+      name: 'http-scale'
+      http: { metadata: { concurrentRequests: '50' } }
     }
   }
   {
@@ -86,16 +78,8 @@ var adapters = [
     minReplicas: 1
     maxReplicas: 8
     scaleRule: {
-      name: 'eventhub-scale'
-      custom: {
-        type: 'azure-eventhub'
-        metadata: {
-          eventHubNamespace: eventHubNamespaceFqdn
-          eventHubName: eventHubName
-          consumerGroup: 'cg-datahub'
-          unprocessedEventThreshold: '64'
-        }
-      }
+      name: 'http-scale'
+      http: { metadata: { concurrentRequests: '50' } }
     }
   }
 ]
@@ -110,7 +94,7 @@ resource apps 'Microsoft.App/containerApps@2024-03-01' = [for a in adapters: {
     configuration: {
       ingress: {
         external: true
-        targetPort: 8080
+        targetPort: 80
         transport: 'http'
       }
       registries: [
@@ -130,10 +114,6 @@ resource apps 'Microsoft.App/containerApps@2024-03-01' = [for a in adapters: {
           env: concat(commonEnv, empty(a.consumerGroup) ? [] : [
             { name: 'EVENTHUB_CONSUMER_GROUP', value: a.consumerGroup }
           ])
-          probes: [
-            { type: 'Liveness', httpGet: { path: '/health', port: 8080 } }
-            { type: 'Readiness', httpGet: { path: '/health', port: 8080 } }
-          ]
         }
       ]
       scale: {

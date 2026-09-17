@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.47.16.16243",
-      "templateHash": "7245502580178141689"
+      "templateHash": "16129187001007850066"
     }
   },
   "parameters": {
@@ -932,7 +932,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.47.16.16243",
-              "templateHash": "17037228069072101749"
+              "templateHash": "14738526852198100254"
             }
           },
           "parameters": {
@@ -1022,14 +1022,10 @@
                 "minReplicas": 1,
                 "maxReplicas": 8,
                 "scaleRule": {
-                  "name": "eventhub-scale",
-                  "custom": {
-                    "type": "azure-eventhub",
+                  "name": "http-scale",
+                  "http": {
                     "metadata": {
-                      "eventHubNamespace": "[parameters('eventHubNamespaceFqdn')]",
-                      "eventHubName": "[parameters('eventHubName')]",
-                      "consumerGroup": "cg-d365",
-                      "unprocessedEventThreshold": "64"
+                      "concurrentRequests": "50"
                     }
                   }
                 }
@@ -1040,14 +1036,10 @@
                 "minReplicas": 1,
                 "maxReplicas": 8,
                 "scaleRule": {
-                  "name": "eventhub-scale",
-                  "custom": {
-                    "type": "azure-eventhub",
+                  "name": "http-scale",
+                  "http": {
                     "metadata": {
-                      "eventHubNamespace": "[parameters('eventHubNamespaceFqdn')]",
-                      "eventHubName": "[parameters('eventHubName')]",
-                      "consumerGroup": "cg-datahub",
-                      "unprocessedEventThreshold": "64"
+                      "concurrentRequests": "50"
                     }
                   }
                 }
@@ -1107,7 +1099,7 @@
                 "configuration": {
                   "ingress": {
                     "external": true,
-                    "targetPort": 8080,
+                    "targetPort": 80,
                     "transport": "http"
                   },
                   "registries": [
@@ -1126,23 +1118,7 @@
                         "cpu": "[json('0.5')]",
                         "memory": "1Gi"
                       },
-                      "env": "[concat(variables('commonEnv'), if(empty(variables('adapters')[copyIndex()].consumerGroup), createArray(), createArray(createObject('name', 'EVENTHUB_CONSUMER_GROUP', 'value', variables('adapters')[copyIndex()].consumerGroup))))]",
-                      "probes": [
-                        {
-                          "type": "Liveness",
-                          "httpGet": {
-                            "path": "/health",
-                            "port": 8080
-                          }
-                        },
-                        {
-                          "type": "Readiness",
-                          "httpGet": {
-                            "path": "/health",
-                            "port": 8080
-                          }
-                        }
-                      ]
+                      "env": "[concat(variables('commonEnv'), if(empty(variables('adapters')[copyIndex()].consumerGroup), createArray(), createArray(createObject('name', 'EVENTHUB_CONSUMER_GROUP', 'value', variables('adapters')[copyIndex()].consumerGroup))))]"
                     }
                   ],
                   "scale": {
