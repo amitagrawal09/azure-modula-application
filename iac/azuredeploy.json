@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.47.16.16243",
-      "templateHash": "12673165431297906394"
+      "templateHash": "11624304159727165243"
     }
   },
   "parameters": {
@@ -1223,7 +1223,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.47.16.16243",
-              "templateHash": "16987322953372714284"
+              "templateHash": "9146032149646461571"
             }
           },
           "parameters": {
@@ -1335,7 +1335,7 @@
               "name": "[format('{0}/{1}', format('apim-{0}-{1}', parameters('namePrefix'), parameters('env')), 'policy')]",
               "properties": {
                 "format": "xml",
-                "value": "<policies>\n  <inbound>\n    <validate-jwt header-name=\"Authorization\" failed-validation-httpcode=\"401\">\n      <openid-config url=\"https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration\" />\n      <audiences><audience>api://modula-integration</audience></audiences>\n    </validate-jwt>\n    <rate-limit calls=\"1000\" renewal-period=\"60\" />\n    <set-header name=\"x-correlation-id\" exists-action=\"skip\">\n      <value>@(Guid.NewGuid().ToString())</value>\n    </set-header>\n  </inbound>\n  <backend><forward-request /></backend>\n  <outbound />\n  <on-error />\n</policies>\n"
+                "value": "<policies>\n  <inbound>\n    <validate-jwt header-name=\"Authorization\" failed-validation-httpcode=\"401\">\n      <openid-config url=\"https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration\" />\n      <audiences><audience>api://modula-integration</audience></audiences>\n    </validate-jwt>\n    <rate-limit-by-key calls=\"1000\" renewal-period=\"60\" counter-key=\"@(context.Request.IpAddress)\" />\n    <set-header name=\"x-correlation-id\" exists-action=\"skip\">\n      <value>@(Guid.NewGuid().ToString())</value>\n    </set-header>\n  </inbound>\n  <backend><forward-request /></backend>\n  <outbound />\n  <on-error />\n</policies>\n"
               },
               "dependsOn": [
                 "[resourceId('Microsoft.ApiManagement/service', format('apim-{0}-{1}', parameters('namePrefix'), parameters('env')))]"

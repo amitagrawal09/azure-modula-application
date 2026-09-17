@@ -65,7 +65,7 @@ resource globalPolicy 'Microsoft.ApiManagement/service/policies@2023-09-01-previ
       <openid-config url="https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration" />
       <audiences><audience>api://modula-integration</audience></audiences>
     </validate-jwt>
-    <rate-limit calls="1000" renewal-period="60" />
+    <rate-limit-by-key calls="1000" renewal-period="60" counter-key="@(context.Request.IpAddress)" />
     <set-header name="x-correlation-id" exists-action="skip">
       <value>@(Guid.NewGuid().ToString())</value>
     </set-header>
