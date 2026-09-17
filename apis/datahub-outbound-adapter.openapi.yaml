@@ -1,0 +1,144 @@
+openapi: 3.0.3
+info:
+  title: DataHub (Databricks) Outbound Adapter API
+  version: 1.0.0
+  description: >
+    Event Hub consumer (consumer group cg-datahub) landing CDM envelopes into the
+    Databricks-based DataHub. Default path: append raw JSON to ADLS Gen2 bronze
+    zone (partitioned by eventType/date) with checkpointed offsets for
+    exactly-once landing; DLT pipelines promote bronze -> silver -> gold under
+    Unity Catalog. REST surface here covers operations: landing status, backfill,
+    checkpoint management, and schema drift reporting.
+servers:
+  - url: https://apim-modula-int.azure-api.net/datahub-adapter/v1
+security:
+  - oauth2: [inventory.operate]
+paths:
+  /landing/status:
+    get:
+      operationId: getLandingStatus
+      summary: Current landing status per eventType
+      responses:
+        '200':
+          description: Landing metrics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  eventHubLag: { type: integer }
+                  lastCheckpoint: { type: string, format: date-time }
+                  bronzePath: { type: string, example: "abfss://bronze@dlsdatahub.dfs.core.windows.net/modula/inventory_events/" }
+                  byEventType:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        eventType: { type: string }
+                        landedToday: { type: integer }
+                        lastEventTimestamp: { type: string, format: date-time }
+  /landing/backfill:
+    post:
+      operationId: startBackfill
+      summary: Re-land events from Event Hub Capture archive into bronze
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fromTimestamp, toTimestamp]
+              properties:
+                fromTimestamp: { type: string, format: date-time }
+                toTimestamp: { type: string, format: date-time }
+                eventTypes:
+                  type: array
+                  items: { type: string }
+                overwrite: { type: boolean, default: false }
+      responses:
+        '202':
+          description: Backfill job started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobId: { type: string, format: uuid }
+  /landing/backfill/{jobId}:
+    get:
+      operationId: getBackfillStatus
+      parameters:
+        - { name: jobId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Job status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobId: { type: string }
+                  status: { type: string, enum: [RUNNING, SUCCEEDED, FAILED] }
+                  eventsLanded: { type: integer }
+                  error: { type: string }
+        '404': { description: Unknown job }
+  /checkpoints/reset:
+    post:
+      operationId: resetCheckpoint
+      summary: Reset consumer checkpoint (admin only — causes reprocessing)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                partitionId: { type: string }
+                toOffset: { type: string }
+                toTimestamp: { type: string, format: date-time }
+      responses:
+        '200': { description: Checkpoint updated }
+        '403': { description: Requires admin scope }
+  /schema/drift:
+    get:
+      operationId: getSchemaDrift
+      summary: Report messages that failed CDM validation on landing (quarantine zone)
+      responses:
+        '200':
+          description: Drift report
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    messageId: { type: string, format: uuid }
+                    receivedSchemaVersion: { type: string }
+                    validationError: { type: string }
+                    quarantinePath: { type: string }
+                    receivedAt: { type: string, format: date-time }
+  /health:
+    get:
+      operationId: healthCheck
+      security: []
+      responses:
+        '200':
+          description: Health incl. Event Hub lag, ADLS and Databricks reachability
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string }
+                  eventHubLag: { type: integer }
+                  adlsReachable: { type: boolean }
+                  databricksJobsHealthy: { type: boolean }
+components:
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://login.microsoftonline.com/{tenantId}/oauth2/v2.0/token
+          scopes:
+            inventory.operate: Operate DataHub adapter

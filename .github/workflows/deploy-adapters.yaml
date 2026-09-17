@@ -1,0 +1,79 @@
+# GitHub Actions — build & deploy adapter APIs to Azure Container Apps
+# Repo layout assumption (github.com/tffi/azure-modula-application):
+#   src/modula-adapter/  src/d365-adapter/  src/datahub-adapter/  (each with Dockerfile)
+name: deploy-adapters
+on:
+  push:
+    branches: [main]
+    paths: ['src/**']
+  workflow_dispatch:
+
+permissions:
+  id-token: write   # OIDC federated login — no stored credentials
+  contents: read
+
+env:
+  RG: rg-modint-dev
+  ACR: acrmodintdev
+
+jobs:
+  infra:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Deploy Bicep
+        run: |
+          az deployment sub create \
+            --location eastus2 \
+            --template-file iac/main.bicep \
+            --parameters env=dev
+
+  build-deploy:
+    needs: infra
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        adapter: [modula-adapter, d365-adapter, datahub-adapter]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Build & push image
+        run: |
+          az acr build -r $ACR \
+            -t ${{ matrix.adapter }}:${{ github.sha }} \
+            src/${{ matrix.adapter }}
+      - name: Update Container App
+        run: |
+          az containerapp update \
+            -g $RG -n ca-${{ matrix.adapter }}-dev \
+            --image $ACR.azurecr.io/${{ matrix.adapter }}:${{ github.sha }}
+
+  import-apis-to-apim:
+    needs: build-deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Import OpenAPI specs into APIM
+        run: |
+          for api in modula-inbound-adapter d365-outbound-adapter datahub-outbound-adapter; do
+            name=$(echo $api | sed 's/-inbound//;s/-outbound//')
+            az apim api import \
+              -g $RG --service-name apim-modint-dev \
+              --api-id $name --path "$name/v1" \
+              --specification-format OpenApi \
+              --specification-path apis/$api.openapi.yaml
+          done

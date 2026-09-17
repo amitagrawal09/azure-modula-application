@@ -1,0 +1,148 @@
+openapi: 3.0.3
+info:
+  title: D365 Outbound Adapter API
+  version: 1.0.0
+  description: >
+    Primarily an Event Hub consumer (consumer group cg-d365) that maps CDM
+    envelopes to D365 F&O inventory journals / Inventory Visibility API calls.
+    This REST surface exposes operational control: replay, dead-letter handling,
+    mapping health, and manual push for reconciliation. Routing is driven purely
+    by controlMessage.operation and eventType — the mapping table below is the
+    contract:
+      Pick/ISSUE            -> Inventory Visibility "onhand change" (issue)
+      PutAway/RECEIPT       -> Inventory Visibility "onhand change" (receipt)
+      InventoryAdjustment   -> Movement/Adjustment journal (auto-post configurable)
+      CycleCount            -> Counting journal line
+      REVERSAL              -> Compensating journal referencing causationId
+servers:
+  - url: https://apim-modula-int.azure-api.net/d365-adapter/v1
+security:
+  - oauth2: [inventory.operate]
+paths:
+  /processing/replay:
+    post:
+      operationId: replayEvents
+      summary: Replay events from Event Hub or DLQ into D365
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mode: { type: string, enum: [BY_MESSAGE_ID, BY_TIME_RANGE, FROM_DLQ] }
+                messageIds:
+                  type: array
+                  items: { type: string, format: uuid }
+                fromTimestamp: { type: string, format: date-time }
+                toTimestamp: { type: string, format: date-time }
+                dryRun: { type: boolean, default: false }
+      responses:
+        '202': { description: Replay job accepted }
+        '400': { description: Invalid replay request }
+  /processing/deadletters:
+    get:
+      operationId: listDeadLetters
+      summary: List dead-lettered messages awaiting intervention
+      parameters:
+        - { name: top, in: query, schema: { type: integer, default: 50 } }
+      responses:
+        '200':
+          description: Dead-letter entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    messageId: { type: string, format: uuid }
+                    correlationId: { type: string, format: uuid }
+                    reason: { type: string }
+                    d365Error: { type: string }
+                    firstFailure: { type: string, format: date-time }
+                    attempts: { type: integer }
+  /processing/deadletters/{messageId}:
+    post:
+      operationId: resolveDeadLetter
+      summary: Retry or discard a dead-lettered message
+      parameters:
+        - { name: messageId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                action: { type: string, enum: [RETRY, DISCARD] }
+                note: { type: string }
+      responses:
+        '200': { description: Action applied }
+        '404': { description: Not found }
+  /d365/push:
+    post:
+      operationId: manualPush
+      summary: Manually push a CDM envelope to D365 (reconciliation/support use)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'modula-inbound-adapter.openapi.yaml#/components/schemas/InventoryEventEnvelope'
+      responses:
+        '200':
+          description: D365 result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  d365JournalId: { type: string }
+                  d365Company: { type: string }
+                  status: { type: string, enum: [POSTED, CREATED_UNPOSTED, FAILED] }
+                  error: { type: string }
+  /mappings/items/{itemId}:
+    get:
+      operationId: getItemMapping
+      summary: Resolve Modula item -> D365 released product mapping
+      parameters:
+        - { name: itemId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: Mapping found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  modulaItemId: { type: string }
+                  d365ItemNumber: { type: string }
+                  d365Company: { type: string }
+                  inventDimDefaults:
+                    type: object
+                    additionalProperties: { type: string }
+        '404': { description: Unmapped item (will dead-letter at runtime) }
+  /health:
+    get:
+      operationId: healthCheck
+      security: []
+      responses:
+        '200':
+          description: Health incl. Event Hub lag and D365 connectivity
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string }
+                  eventHubLag: { type: integer, description: Unprocessed events in cg-d365 }
+                  d365Reachable: { type: boolean }
+components:
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://login.microsoftonline.com/{tenantId}/oauth2/v2.0/token
+          scopes:
+            inventory.operate: Operate D365 adapter

@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tffi.com/schemas/integration/inventory-event/v1.0.0",
+  "title": "InventoryEventEnvelope",
+  "description": "Common Data Model envelope for Modula -> Event Hub -> D365/DataHub inventory integration. Every message = controlMessage (routing/operation semantics) + payload (business data). Adapters route on controlMessage only; they never inspect payload for routing decisions (loose coupling).",
+  "type": "object",
+  "required": ["controlMessage", "payload"],
+  "additionalProperties": false,
+  "properties": {
+    "controlMessage": {
+      "type": "object",
+      "required": ["messageId", "correlationId", "eventType", "operation", "sourceSystem", "schemaVersion", "eventTimestamp"],
+      "additionalProperties": false,
+      "properties": {
+        "messageId":       { "type": "string", "format": "uuid", "description": "Unique per message; used as idempotency key by consumers." },
+        "correlationId":   { "type": "string", "format": "uuid", "description": "End-to-end trace id, propagated through Modula adapter -> Event Hub -> D365/DataHub adapters and App Insights." },
+        "causationId":     { "type": "string", "format": "uuid", "description": "messageId of the message that caused this one (for replay/compensation chains)." },
+        "eventType": {
+          "type": "string",
+          "enum": ["InventoryMovement", "InventoryAdjustment", "CycleCount", "PutAway", "Pick", "StockOnHandSnapshot"],
+          "description": "Business event classification."
+        },
+        "operation": {
+          "type": "string",
+          "enum": ["CREATE", "UPDATE", "DELETE", "UPSERT", "SNAPSHOT", "REVERSAL"],
+          "description": "What the consumer must do with the payload. REVERSAL compensates a prior message referenced by causationId."
+        },
+        "sourceSystem":    { "type": "string", "enum": ["MODULA"], "description": "System of record for this event." },
+        "targetSystems": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["D365", "DATAHUB", "ALL"] },
+          "default": ["ALL"],
+          "description": "Routing hint. Consumers ignore messages not addressed to them."
+        },
+        "schemaVersion":   { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$", "examples": ["1.0.0"] },
+        "eventTimestamp":  { "type": "string", "format": "date-time", "description": "When the event occurred in Modula (UTC)." },
+        "publishTimestamp":{ "type": "string", "format": "date-time", "description": "When the adapter published to Event Hub (UTC). Set by adapter." },
+        "priority":        { "type": "string", "enum": ["HIGH", "NORMAL", "LOW"], "default": "NORMAL" },
+        "retryCount":      { "type": "integer", "minimum": 0, "default": 0 },
+        "partitionKey":    { "type": "string", "description": "Usually warehouseId+itemId to guarantee per-item ordering within a partition." },
+        "tenant":          { "type": "string", "description": "Legal entity / company code for D365 (e.g. 'TFFI')." }
+      }
+    },
+    "payload": {
+      "type": "object",
+      "required": ["warehouseId", "lines"],
+      "additionalProperties": false,
+      "properties": {
+        "warehouseId":   { "type": "string", "description": "Modula warehouse identifier, mapped to D365 warehouse." },
+        "vlmUnitId":     { "type": "string", "description": "Modula VLM machine/unit id." },
+        "referenceDocument": {
+          "type": "object",
+          "properties": {
+            "documentType":   { "type": "string", "enum": ["TransferOrder", "SalesOrder", "PurchaseOrder", "ProductionOrder", "AdjustmentJournal", "CountingJournal", "None"] },
+            "documentNumber": { "type": "string" },
+            "documentLine":   { "type": "integer" }
+          }
+        },
+        "operator":      { "type": "string", "description": "Warehouse operator id who performed the transaction." },
+        "lines": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["lineNumber", "itemId", "quantity", "unitOfMeasure", "transactionType"],
+            "additionalProperties": false,
+            "properties": {
+              "lineNumber":     { "type": "integer", "minimum": 1 },
+              "itemId":         { "type": "string", "description": "Item number (must exist in D365 released products)." },
+              "itemDescription":{ "type": "string" },
+              "quantity":       { "type": "number", "description": "Positive = receipt/increase, negative = issue/decrease." },
+              "unitOfMeasure":  { "type": "string", "examples": ["EA", "CS", "LB", "KG"] },
+              "transactionType":{ "type": "string", "enum": ["RECEIPT", "ISSUE", "ADJUSTMENT_IN", "ADJUSTMENT_OUT", "COUNT", "TRANSFER"] },
+              "fromLocation": {
+                "type": "object",
+                "properties": {
+                  "locationId": { "type": "string" },
+                  "trayId":     { "type": "string" },
+                  "cellId":     { "type": "string" }
+                }
+              },
+              "toLocation": {
+                "type": "object",
+                "properties": {
+                  "locationId": { "type": "string" },
+                  "trayId":     { "type": "string" },
+                  "cellId":     { "type": "string" }
+                }
+              },
+              "tracking": {
+                "type": "object",
+                "properties": {
+                  "batchNumber":    { "type": "string" },
+                  "serialNumber":   { "type": "string" },
+                  "expirationDate": { "type": "string", "format": "date" }
+                }
+              },
+              "countedQuantity":  { "type": "number", "description": "For CycleCount events: physical counted qty." },
+              "expectedQuantity": { "type": "number", "description": "For CycleCount events: system qty at count time." },
+              "reasonCode":       { "type": "string", "description": "Adjustment reason, mapped to D365 counting reason codes." },
+              "unitCost":         { "type": "number" },
+              "currency":         { "type": "string", "examples": ["USD"] }
+            }
+          }
+        },
+        "extensions": {
+          "type": "object",
+          "description": "Open extension bag for target-specific attributes; consumers ignore unknown keys.",
+          "additionalProperties": true
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "controlMessage": {
+        "messageId": "6f1c1b2e-8a4d-4f0a-9c3e-1d2f3a4b5c6d",
+        "correlationId": "aa1c1b2e-8a4d-4f0a-9c3e-1d2f3a4b5c6d",
+        "eventType": "Pick",
+        "operation": "CREATE",
+        "sourceSystem": "MODULA",
+        "targetSystems": ["ALL"],
+        "schemaVersion": "1.0.0",
+        "eventTimestamp": "2026-09-07T14:22:05Z",
+        "partitionKey": "WH01-ITEM-10045",
+        "tenant": "TFFI"
+      },
+      "payload": {
+        "warehouseId": "WH01",
+        "vlmUnitId": "VLM-03",
+        "referenceDocument": { "documentType": "SalesOrder", "documentNumber": "SO-004512", "documentLine": 3 },
+        "operator": "jdoe",
+        "lines": [
+          {
+            "lineNumber": 1,
+            "itemId": "ITEM-10045",
+            "quantity": -12,
+            "unitOfMeasure": "EA",
+            "transactionType": "ISSUE",
+            "fromLocation": { "locationId": "VLM-03", "trayId": "T-22", "cellId": "C-104" },
+            "tracking": { "batchNumber": "B20260901" }
+          }
+        ]
+      }
+    }
+  ]
+}
