@@ -47,3 +47,17 @@ az deployment sub create -l eastus2 -f iac/main.bicep -p env=prod
 3. Grant the DataHub adapter's identity access to the Databricks workspace /
    Unity Catalog external location for the bronze container.
 4. Point Modula webhook (or middleware poller) at APIM `POST /modula-adapter/v1/inventory/events`.
+
+## Testing the pipeline
+
+After completing the post-deploy steps ([docs/POST-DEPLOY-RUNBOOK.md](docs/POST-DEPLOY-RUNBOOK.md)),
+validate end to end with the **Modula WMS simulator** — it generates realistic CDM
+events (picks, put-aways, adjustments, cycle counts) and posts them through APIM
+exactly like Modula would, including failure-injection modes for the 400/quarantine
+and dead-letter paths:
+
+1. Dry run locally: `MODE=dry-run python3 src/modula-simulator/simulator.py`
+2. Live run against dev, then check delivery status, D365 journals, bronze files,
+   and App Insights correlation.
+
+Full instructions: [src/modula-simulator/README.md](src/modula-simulator/README.md)
