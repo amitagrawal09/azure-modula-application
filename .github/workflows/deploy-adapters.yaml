@@ -1,5 +1,5 @@
 # GitHub Actions — build & deploy adapter APIs to Azure Container Apps
-# Repo layout assumption (github.com/tffi/azure-modula-application):
+# Repo layout assumption (github.com/amitagrawal09/azure-modula-application):
 #   src/modula-adapter/  src/d365-adapter/  src/datahub-adapter/  (each with Dockerfile)
 name: deploy-adapters
 on:

@@ -4,7 +4,7 @@
 Push this repo (or just `iac/azuredeploy.json`) to GitHub, then this button gives a
 portal-driven deployment with a parameter form (env, location, namePrefix):
 
-[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Ftffi%2Fazure-modula-application%2Fmain%2Fiac%2Fazuredeploy.json)
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Famitagrawal09%2Fazure-modula-application%2Fmain%2Fiac%2Fazuredeploy.json)
 
 If the repo lives elsewhere, URL-encode the raw path to `azuredeploy.json` and substitute
 it after `/uri/`. The template is **subscription scope** — the portal will ask for a
