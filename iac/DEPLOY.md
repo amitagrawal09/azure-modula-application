@@ -30,17 +30,6 @@ quarantine), Event Hubs namespace with `inventory-events` + consumer groups + sc
 group, Service Bus DLQs, ACR + Container Apps environment + 3 adapter apps (placeholder
 images until first CI/CD run), APIM with policies, and all managed-identity RBAC.
 
-## Automated post-deploy (built into the template)
-The `postdeploy` module now runs automatically at the end of every deployment:
-- **CDM schema registration** into the `inventory-cdm` schema group (pulled from this repo's raw URL)
-- **Simulator image build** from `src/modula-simulator` (ACR Task, straight from GitHub — no local Docker) and a manual-trigger **Container Apps job** `caj-modula-sim-<env>` (defaults to dry-run mode; start it with `az containerapp job start -g rg-modint-dev -n caj-modula-sim-dev`)
-- **Databricks Access Connector** (`dbac-modint-<env>`) with Storage Blob Data Contributor on the bronze storage — use its resource ID as the Unity Catalog storage credential
-- **Key Vault secrets** for D365/Modula when supplied as parameters:
-  `-p d365ClientId=... d365ClientSecret=... d365BaseUrl=... modulaApiKey=...` (all optional/secure; skipped when empty)
-- **Adapter image build + rollout** when `-p deployAdapters=true` — flip this on once `src/<adapter>/Dockerfile` exists; until then adapters stay on placeholders and CI/CD owns their rollout
-
-Still manual (target-system side, cannot be ARM'd): the D365 Entra app registration inside F&O, the Unity Catalog storage credential/external location inside Databricks, and the Modula webhook configuration — see docs/POST-DEPLOY-RUNBOOK.md Steps 2.1, 3.2, 4.
-
 ## After first deploy
 Run the GitHub Actions workflow (`iac/deploy-apis.yaml`) or `az acr build` +
 `az containerapp update` per adapter to replace the placeholder images, then complete

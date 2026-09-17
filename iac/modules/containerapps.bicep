@@ -133,4 +133,3 @@ output modulaAdapterPrincipalId string = apps[0].identity.principalId
 output d365AdapterPrincipalId string = apps[1].identity.principalId
 output datahubAdapterPrincipalId string = apps[2].identity.principalId
 output acrLoginServer string = acr.properties.loginServer
-output acrName string = acr.name

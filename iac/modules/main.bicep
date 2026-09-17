@@ -6,18 +6,6 @@ targetScope = 'subscription'
 param env string = 'dev'
 param location string = 'eastus2'
 param namePrefix string = 'modint'
-param repoUrl string = 'https://github.com/amitagrawal09/azure-modula-application.git'
-param repoBranch string = 'main'
-param deploySimulator bool = true
-param deployAdapters bool = false
-@secure()
-param d365ClientId string = ''
-@secure()
-param d365ClientSecret string = ''
-@secure()
-param d365BaseUrl string = ''
-@secure()
-param modulaApiKey string = ''
 
 var rgName = 'rg-${namePrefix}-${env}'
 var tags = {
@@ -139,31 +127,5 @@ module rbac 'modules/rbac.bicep' = {
   }
 }
 
-module postdeploy 'modules/postdeploy.bicep' = {
-  scope: rg
-  name: 'postdeploy'
-  dependsOn: [rbac]
-  params: {
-    env: env
-    location: location
-    namePrefix: namePrefix
-    tags: tags
-    eventHubNamespaceName: eventhub.outputs.namespaceName
-    keyVaultName: keyvault.outputs.keyVaultName
-    storageAccountName: storage.outputs.storageAccountName
-    acrName: containerApps.outputs.acrName
-    repoUrl: repoUrl
-    repoBranch: repoBranch
-    cdmSchemaRawUrl: '${replace(replace(repoUrl, 'github.com', 'raw.githubusercontent.com'), '.git', '')}/${repoBranch}/cdm/inventory-event-cdm.schema.json'
-    deploySimulator: deploySimulator
-    deployAdapters: deployAdapters
-    d365ClientId: d365ClientId
-    d365ClientSecret: d365ClientSecret
-    d365BaseUrl: d365BaseUrl
-    modulaApiKey: modulaApiKey
-  }
-}
-
 output apimGatewayUrl string = apim.outputs.gatewayUrl
-output simulatorJob string = postdeploy.outputs.simulatorJobName
 output eventHubNamespace string = eventhub.outputs.namespaceFqdn
