@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.47.16.16243",
-      "templateHash": "11624304159727165243"
+      "templateHash": "12018850772525836971"
     }
   },
   "parameters": {
@@ -25,6 +25,38 @@
     "namePrefix": {
       "type": "string",
       "defaultValue": "modint"
+    },
+    "repoUrl": {
+      "type": "string",
+      "defaultValue": "https://github.com/amitagrawal09/azure-modula-application.git"
+    },
+    "repoBranch": {
+      "type": "string",
+      "defaultValue": "main"
+    },
+    "deploySimulator": {
+      "type": "bool",
+      "defaultValue": true
+    },
+    "deployAdapters": {
+      "type": "bool",
+      "defaultValue": false
+    },
+    "d365ClientId": {
+      "type": "securestring",
+      "defaultValue": ""
+    },
+    "d365ClientSecret": {
+      "type": "securestring",
+      "defaultValue": ""
+    },
+    "d365BaseUrl": {
+      "type": "securestring",
+      "defaultValue": ""
+    },
+    "modulaApiKey": {
+      "type": "securestring",
+      "defaultValue": ""
     }
   },
   "variables": {
@@ -932,7 +964,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.47.16.16243",
-              "templateHash": "9919810302408584698"
+              "templateHash": "6270532498163050106"
             }
           },
           "parameters": {
@@ -1164,6 +1196,10 @@
             "acrLoginServer": {
               "type": "string",
               "value": "[reference(resourceId('Microsoft.ContainerRegistry/registries', format('acr{0}{1}', parameters('namePrefix'), parameters('env'))), '2023-11-01-preview').loginServer]"
+            },
+            "acrName": {
+              "type": "string",
+              "value": "[format('acr{0}{1}', parameters('namePrefix'), parameters('env'))]"
             }
           }
         }
@@ -1491,12 +1527,445 @@
         "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('rgName'))]",
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('rgName')), 'Microsoft.Resources/deployments', 'storage')]"
       ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "postdeploy",
+      "resourceGroup": "[variables('rgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "env": {
+            "value": "[parameters('env')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "namePrefix": {
+            "value": "[parameters('namePrefix')]"
+          },
+          "tags": {
+            "value": "[variables('tags')]"
+          },
+          "eventHubNamespaceName": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('rgName')), 'Microsoft.Resources/deployments', 'eventhub'), '2025-04-01').outputs.namespaceName.value]"
+          },
+          "keyVaultName": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('rgName')), 'Microsoft.Resources/deployments', 'keyvault'), '2025-04-01').outputs.keyVaultName.value]"
+          },
+          "storageAccountName": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('rgName')), 'Microsoft.Resources/deployments', 'storage'), '2025-04-01').outputs.storageAccountName.value]"
+          },
+          "acrName": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('rgName')), 'Microsoft.Resources/deployments', 'containerApps'), '2025-04-01').outputs.acrName.value]"
+          },
+          "repoUrl": {
+            "value": "[parameters('repoUrl')]"
+          },
+          "repoBranch": {
+            "value": "[parameters('repoBranch')]"
+          },
+          "cdmSchemaRawUrl": {
+            "value": "[format('{0}/{1}/cdm/inventory-event-cdm.schema.json', replace(replace(parameters('repoUrl'), 'github.com', 'raw.githubusercontent.com'), '.git', ''), parameters('repoBranch'))]"
+          },
+          "deploySimulator": {
+            "value": "[parameters('deploySimulator')]"
+          },
+          "deployAdapters": {
+            "value": "[parameters('deployAdapters')]"
+          },
+          "d365ClientId": {
+            "value": "[parameters('d365ClientId')]"
+          },
+          "d365ClientSecret": {
+            "value": "[parameters('d365ClientSecret')]"
+          },
+          "d365BaseUrl": {
+            "value": "[parameters('d365BaseUrl')]"
+          },
+          "modulaApiKey": {
+            "value": "[parameters('modulaApiKey')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.47.16.16243",
+              "templateHash": "8356747523913793589"
+            }
+          },
+          "parameters": {
+            "env": {
+              "type": "string"
+            },
+            "location": {
+              "type": "string"
+            },
+            "namePrefix": {
+              "type": "string"
+            },
+            "tags": {
+              "type": "object"
+            },
+            "eventHubNamespaceName": {
+              "type": "string"
+            },
+            "keyVaultName": {
+              "type": "string"
+            },
+            "storageAccountName": {
+              "type": "string"
+            },
+            "acrName": {
+              "type": "string"
+            },
+            "repoUrl": {
+              "type": "string"
+            },
+            "repoBranch": {
+              "type": "string",
+              "defaultValue": "main"
+            },
+            "cdmSchemaRawUrl": {
+              "type": "string"
+            },
+            "deploySimulator": {
+              "type": "bool",
+              "defaultValue": true
+            },
+            "deployAdapters": {
+              "type": "bool",
+              "defaultValue": false
+            },
+            "d365ClientId": {
+              "type": "securestring",
+              "defaultValue": ""
+            },
+            "d365ClientSecret": {
+              "type": "securestring",
+              "defaultValue": ""
+            },
+            "d365BaseUrl": {
+              "type": "securestring",
+              "defaultValue": ""
+            },
+            "modulaApiKey": {
+              "type": "securestring",
+              "defaultValue": ""
+            }
+          },
+          "variables": {
+            "roles": {
+              "schemaRegistryContributor": "5dffeca3-4936-4216-b2bc-10343a5abb25",
+              "acrPush": "8311e382-0749-4cb8-b61a-304f252e45ec",
+              "acrPull": "7f951dda-4ed3-4680-a7ca-43fe172d538d",
+              "contributor": "b24988ac-6180-42a0-ab88-20f7382dd24c",
+              "kvSecretsOfficer": "b86a8fe4-44ce-4948-aee5-eccb2c155cd7"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+              "apiVersion": "2023-01-31",
+              "name": "[format('id-postdeploy-{0}-{1}', parameters('namePrefix'), parameters('env'))]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]"
+            },
+            {
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[resourceId('Microsoft.EventHub/namespaces', parameters('eventHubNamespaceName'))]",
+              "name": "[guid(resourceId('Microsoft.EventHub/namespaces', parameters('eventHubNamespaceName')), resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-postdeploy-{0}-{1}', parameters('namePrefix'), parameters('env'))), 'schema')]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').schemaRegistryContributor)]",
+                "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-postdeploy-{0}-{1}', parameters('namePrefix'), parameters('env'))), '2023-01-31').principalId]",
+                "principalType": "ServicePrincipal"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-postdeploy-{0}-{1}', parameters('namePrefix'), parameters('env')))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[resourceId('Microsoft.ContainerRegistry/registries', parameters('acrName'))]",
+              "name": "[guid(resourceId('Microsoft.ContainerRegistry/registries', parameters('acrName')), resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-postdeploy-{0}-{1}', parameters('namePrefix'), parameters('env'))), 'push')]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').acrPush)]",
+                "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-postdeploy-{0}-{1}', parameters('namePrefix'), parameters('env'))), '2023-01-31').principalId]",
+                "principalType": "ServicePrincipal"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-postdeploy-{0}-{1}', parameters('namePrefix'), parameters('env')))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[resourceId('Microsoft.ContainerRegistry/registries', parameters('acrName'))]",
+              "name": "[guid(resourceId('Microsoft.ContainerRegistry/registries', parameters('acrName')), resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-postdeploy-{0}-{1}', parameters('namePrefix'), parameters('env'))), 'pull')]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').acrPull)]",
+                "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-postdeploy-{0}-{1}', parameters('namePrefix'), parameters('env'))), '2023-01-31').principalId]",
+                "principalType": "ServicePrincipal"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-postdeploy-{0}-{1}', parameters('namePrefix'), parameters('env')))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "name": "[guid(resourceGroup().id, resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-postdeploy-{0}-{1}', parameters('namePrefix'), parameters('env'))), 'contrib')]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').contributor)]",
+                "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-postdeploy-{0}-{1}', parameters('namePrefix'), parameters('env'))), '2023-01-31').principalId]",
+                "principalType": "ServicePrincipal"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-postdeploy-{0}-{1}', parameters('namePrefix'), parameters('env')))]"
+              ]
+            },
+            {
+              "condition": "[not(empty(parameters('d365ClientId')))]",
+              "type": "Microsoft.KeyVault/vaults/secrets",
+              "apiVersion": "2023-07-01",
+              "name": "[format('{0}/{1}', parameters('keyVaultName'), 'd365-client-id')]",
+              "properties": {
+                "value": "[parameters('d365ClientId')]"
+              }
+            },
+            {
+              "condition": "[not(empty(parameters('d365ClientSecret')))]",
+              "type": "Microsoft.KeyVault/vaults/secrets",
+              "apiVersion": "2023-07-01",
+              "name": "[format('{0}/{1}', parameters('keyVaultName'), 'd365-client-secret')]",
+              "properties": {
+                "value": "[parameters('d365ClientSecret')]"
+              }
+            },
+            {
+              "condition": "[not(empty(parameters('d365BaseUrl')))]",
+              "type": "Microsoft.KeyVault/vaults/secrets",
+              "apiVersion": "2023-07-01",
+              "name": "[format('{0}/{1}', parameters('keyVaultName'), 'd365-base-url')]",
+              "properties": {
+                "value": "[parameters('d365BaseUrl')]"
+              }
+            },
+            {
+              "condition": "[not(empty(parameters('d365ClientId')))]",
+              "type": "Microsoft.KeyVault/vaults/secrets",
+              "apiVersion": "2023-07-01",
+              "name": "[format('{0}/{1}', parameters('keyVaultName'), 'd365-tenant-id')]",
+              "properties": {
+                "value": "[tenant().tenantId]"
+              }
+            },
+            {
+              "condition": "[not(empty(parameters('modulaApiKey')))]",
+              "type": "Microsoft.KeyVault/vaults/secrets",
+              "apiVersion": "2023-07-01",
+              "name": "[format('{0}/{1}', parameters('keyVaultName'), 'modula-api-key')]",
+              "properties": {
+                "value": "[parameters('modulaApiKey')]"
+              }
+            },
+            {
+              "type": "Microsoft.Databricks/accessConnectors",
+              "apiVersion": "2024-05-01",
+              "name": "[format('dbac-{0}-{1}', parameters('namePrefix'), parameters('env'))]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "identity": {
+                "type": "SystemAssigned"
+              }
+            },
+            {
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]",
+              "name": "[guid(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), resourceId('Microsoft.Databricks/accessConnectors', format('dbac-{0}-{1}', parameters('namePrefix'), parameters('env'))), 'blob')]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe')]",
+                "principalId": "[reference(resourceId('Microsoft.Databricks/accessConnectors', format('dbac-{0}-{1}', parameters('namePrefix'), parameters('env'))), '2024-05-01', 'full').identity.principalId]",
+                "principalType": "ServicePrincipal"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Databricks/accessConnectors', format('dbac-{0}-{1}', parameters('namePrefix'), parameters('env')))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Resources/deploymentScripts",
+              "apiVersion": "2023-08-01",
+              "name": "[format('ds-postdeploy-{0}-{1}', parameters('namePrefix'), parameters('env'))]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "kind": "AzureCLI",
+              "identity": {
+                "type": "UserAssigned",
+                "userAssignedIdentities": {
+                  "[format('{0}', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-postdeploy-{0}-{1}', parameters('namePrefix'), parameters('env'))))]": {}
+                }
+              },
+              "properties": {
+                "azCliVersion": "2.63.0",
+                "retentionInterval": "PT4H",
+                "timeout": "PT45M",
+                "cleanupPreference": "OnSuccess",
+                "environmentVariables": [
+                  {
+                    "name": "EVHNS",
+                    "value": "[parameters('eventHubNamespaceName')]"
+                  },
+                  {
+                    "name": "ACR",
+                    "value": "[parameters('acrName')]"
+                  },
+                  {
+                    "name": "RG",
+                    "value": "[resourceGroup().name]"
+                  },
+                  {
+                    "name": "ENVNAME",
+                    "value": "[parameters('env')]"
+                  },
+                  {
+                    "name": "REPO_URL",
+                    "value": "[parameters('repoUrl')]"
+                  },
+                  {
+                    "name": "REPO_BRANCH",
+                    "value": "[parameters('repoBranch')]"
+                  },
+                  {
+                    "name": "SCHEMA_URL",
+                    "value": "[parameters('cdmSchemaRawUrl')]"
+                  },
+                  {
+                    "name": "BUILD_SIM",
+                    "value": "[string(parameters('deploySimulator'))]"
+                  },
+                  {
+                    "name": "BUILD_ADAPTERS",
+                    "value": "[string(parameters('deployAdapters'))]"
+                  }
+                ],
+                "scriptContent": "set -euo pipefail\necho \"=== RBAC propagation grace period ===\"\nsleep 60\n\necho \"=== 1. Register CDM schema in inventory-cdm ===\"\ncurl -sSL \"$SCHEMA_URL\" -o /tmp/cdm.json\nTOKEN=$(az account get-access-token --resource https://eventhubs.azure.net --query accessToken -o tsv)\nfor i in 1 2 3 4 5; do\n  CODE=$(curl -s -o /tmp/resp.txt -w \"%{http_code}\" -X PUT \\\n    \"https://$EVHNS.servicebus.windows.net/\\$schemagroups/inventory-cdm/schemas/InventoryEventEnvelope?api-version=2020-09-01-preview\" \\\n    -H \"Authorization: Bearer $TOKEN\" \\\n    -H \"Content-Type: application/json; serialization=Json\" \\\n    --data-binary @/tmp/cdm.json) && [ \"$CODE\" -lt 300 ] && break\n  echo \"schema PUT attempt $i -> $CODE ($(cat /tmp/resp.txt | head -c 200)); retrying in 30s\"; sleep 30\ndone\n[ \"$CODE\" -lt 300 ] || { echo \"schema registration failed\"; exit 1; }\necho \"schema registered (HTTP $CODE)\"\n\nSRC=\"$REPO_URL#$REPO_BRANCH\"\n\nif [ \"$BUILD_SIM\" = \"true\" ] || [ \"$BUILD_SIM\" = \"True\" ]; then\n  echo \"=== 2. Build simulator image from $SRC ===\"\n  for i in 1 2 3; do\n    az acr build -r \"$ACR\" -t modula-simulator:latest \"$SRC:src/modula-simulator\" && break\n    echo \"acr build attempt $i failed (RBAC propagation?); retrying in 30s\"; sleep 30\n  done\nfi\n\nif [ \"$BUILD_ADAPTERS\" = \"true\" ] || [ \"$BUILD_ADAPTERS\" = \"True\" ]; then\n  echo \"=== 3. Build adapter images and roll container apps ===\"\n  for a in modula-adapter d365-adapter datahub-adapter; do\n    az acr build -r \"$ACR\" -t \"$a:latest\" \"$SRC:src/$a\"\n    az containerapp update -g \"$RG\" -n \"ca-$a-$ENVNAME\" \\\n      --image \"$ACR.azurecr.io/$a:latest\"\n  done\n  echo \"NOTE: probes/targetPort 8080 + KEDA eventhub scaling applied by CI/CD workflow\"\nfi\necho \"=== post-deploy complete ===\"\n"
+              },
+              "dependsOn": [
+                "[extensionResourceId(resourceId('Microsoft.ContainerRegistry/registries', parameters('acrName')), 'Microsoft.Authorization/roleAssignments', guid(resourceId('Microsoft.ContainerRegistry/registries', parameters('acrName')), resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-postdeploy-{0}-{1}', parameters('namePrefix'), parameters('env'))), 'pull'))]",
+                "[extensionResourceId(resourceId('Microsoft.ContainerRegistry/registries', parameters('acrName')), 'Microsoft.Authorization/roleAssignments', guid(resourceId('Microsoft.ContainerRegistry/registries', parameters('acrName')), resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-postdeploy-{0}-{1}', parameters('namePrefix'), parameters('env'))), 'push'))]",
+                "[resourceId('Microsoft.Authorization/roleAssignments', guid(resourceGroup().id, resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-postdeploy-{0}-{1}', parameters('namePrefix'), parameters('env'))), 'contrib'))]",
+                "[extensionResourceId(resourceId('Microsoft.EventHub/namespaces', parameters('eventHubNamespaceName')), 'Microsoft.Authorization/roleAssignments', guid(resourceId('Microsoft.EventHub/namespaces', parameters('eventHubNamespaceName')), resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-postdeploy-{0}-{1}', parameters('namePrefix'), parameters('env'))), 'schema'))]",
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-postdeploy-{0}-{1}', parameters('namePrefix'), parameters('env')))]"
+              ]
+            },
+            {
+              "condition": "[parameters('deploySimulator')]",
+              "type": "Microsoft.App/jobs",
+              "apiVersion": "2024-03-01",
+              "name": "[format('caj-modula-sim-{0}', parameters('env'))]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "identity": {
+                "type": "UserAssigned",
+                "userAssignedIdentities": {
+                  "[format('{0}', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-postdeploy-{0}-{1}', parameters('namePrefix'), parameters('env'))))]": {}
+                }
+              },
+              "properties": {
+                "environmentId": "[resourceId('Microsoft.App/managedEnvironments', format('cae-{0}-{1}', parameters('namePrefix'), parameters('env')))]",
+                "workloadProfileName": "Consumption",
+                "configuration": {
+                  "triggerType": "Manual",
+                  "replicaTimeout": 3900,
+                  "replicaRetryLimit": 0,
+                  "manualTriggerConfig": {
+                    "parallelism": 1,
+                    "replicaCompletionCount": 1
+                  },
+                  "registries": [
+                    {
+                      "server": "[reference(resourceId('Microsoft.ContainerRegistry/registries', parameters('acrName')), '2023-11-01-preview').loginServer]",
+                      "identity": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-postdeploy-{0}-{1}', parameters('namePrefix'), parameters('env')))]"
+                    }
+                  ]
+                },
+                "template": {
+                  "containers": [
+                    {
+                      "name": "simulator",
+                      "image": "[format('{0}/modula-simulator:latest', reference(resourceId('Microsoft.ContainerRegistry/registries', parameters('acrName')), '2023-11-01-preview').loginServer)]",
+                      "resources": {
+                        "cpu": "[json('0.25')]",
+                        "memory": "0.5Gi"
+                      },
+                      "env": [
+                        {
+                          "name": "MODE",
+                          "value": "dry-run"
+                        },
+                        {
+                          "name": "RATE_PER_MIN",
+                          "value": "30"
+                        },
+                        {
+                          "name": "DURATION_SEC",
+                          "value": "120"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Resources/deploymentScripts', format('ds-postdeploy-{0}-{1}', parameters('namePrefix'), parameters('env')))]",
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-postdeploy-{0}-{1}', parameters('namePrefix'), parameters('env')))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "postDeployIdentity": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-postdeploy-{0}-{1}', parameters('namePrefix'), parameters('env'))), '2023-01-31').principalId]"
+            },
+            "databricksConnectorId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Databricks/accessConnectors', format('dbac-{0}-{1}', parameters('namePrefix'), parameters('env')))]"
+            },
+            "simulatorJobName": {
+              "type": "string",
+              "value": "[if(parameters('deploySimulator'), format('caj-modula-sim-{0}', parameters('env')), '')]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('rgName')), 'Microsoft.Resources/deployments', 'containerApps')]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('rgName')), 'Microsoft.Resources/deployments', 'eventhub')]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('rgName')), 'Microsoft.Resources/deployments', 'keyvault')]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('rgName')), 'Microsoft.Resources/deployments', 'rbac')]",
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('rgName'))]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('rgName')), 'Microsoft.Resources/deployments', 'storage')]"
+      ]
     }
   ],
   "outputs": {
     "apimGatewayUrl": {
       "type": "string",
       "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('rgName')), 'Microsoft.Resources/deployments', 'apim'), '2025-04-01').outputs.gatewayUrl.value]"
+    },
+    "simulatorJob": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('rgName')), 'Microsoft.Resources/deployments', 'postdeploy'), '2025-04-01').outputs.simulatorJobName.value]"
     },
     "eventHubNamespace": {
       "type": "string",
