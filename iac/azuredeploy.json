@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.47.16.16243",
-      "templateHash": "16809005310986038745"
+      "templateHash": "7245502580178141689"
     }
   },
   "parameters": {
@@ -477,7 +477,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.47.16.16243",
-              "templateHash": "4461007469743576404"
+              "templateHash": "859960341005753651"
             }
           },
           "parameters": {
@@ -572,7 +572,7 @@
               "apiVersion": "2024-01-01",
               "name": "[format('{0}/{1}', variables('nsName'), 'inventory-cdm')]",
               "properties": {
-                "schemaCompatibility": "Backward",
+                "schemaCompatibility": "None",
                 "schemaType": "Json"
               },
               "dependsOn": [
