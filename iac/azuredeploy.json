@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.47.16.16243",
-      "templateHash": "16129187001007850066"
+      "templateHash": "12673165431297906394"
     }
   },
   "parameters": {
@@ -932,7 +932,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.47.16.16243",
-              "templateHash": "14738526852198100254"
+              "templateHash": "9919810302408584698"
             }
           },
           "parameters": {
@@ -1078,6 +1078,12 @@
                   "infrastructureSubnetId": "[parameters('infraSubnetId')]",
                   "internal": false
                 },
+                "workloadProfiles": [
+                  {
+                    "name": "Consumption",
+                    "workloadProfileType": "Consumption"
+                  }
+                ],
                 "zoneRedundant": "[variables('isProd')]"
               }
             },
@@ -1096,18 +1102,13 @@
               },
               "properties": {
                 "managedEnvironmentId": "[resourceId('Microsoft.App/managedEnvironments', format('cae-{0}-{1}', parameters('namePrefix'), parameters('env')))]",
+                "workloadProfileName": "Consumption",
                 "configuration": {
                   "ingress": {
                     "external": true,
                     "targetPort": 80,
                     "transport": "http"
-                  },
-                  "registries": [
-                    {
-                      "server": "[reference(resourceId('Microsoft.ContainerRegistry/registries', format('acr{0}{1}', parameters('namePrefix'), parameters('env'))), '2023-11-01-preview').loginServer]",
-                      "identity": "system"
-                    }
-                  ]
+                  }
                 },
                 "template": {
                   "containers": [
@@ -1131,8 +1132,7 @@
                 }
               },
               "dependsOn": [
-                "[resourceId('Microsoft.App/managedEnvironments', format('cae-{0}-{1}', parameters('namePrefix'), parameters('env')))]",
-                "[resourceId('Microsoft.ContainerRegistry/registries', format('acr{0}{1}', parameters('namePrefix'), parameters('env')))]"
+                "[resourceId('Microsoft.App/managedEnvironments', format('cae-{0}-{1}', parameters('namePrefix'), parameters('env')))]"
               ]
             }
           ],

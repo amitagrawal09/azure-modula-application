@@ -38,6 +38,12 @@ resource acaEnv 'Microsoft.App/managedEnvironments@2024-03-01' = {
       infrastructureSubnetId: infraSubnetId
       internal: false
     }
+    workloadProfiles: [
+      {
+        name: 'Consumption'
+        workloadProfileType: 'Consumption'
+      }
+    ]
     zoneRedundant: isProd
   }
 }
@@ -91,18 +97,13 @@ resource apps 'Microsoft.App/containerApps@2024-03-01' = [for a in adapters: {
   identity: { type: 'SystemAssigned' }
   properties: {
     managedEnvironmentId: acaEnv.id
+    workloadProfileName: 'Consumption'
     configuration: {
       ingress: {
         external: true
         targetPort: 80
         transport: 'http'
       }
-      registries: [
-        {
-          server: acr.properties.loginServer
-          identity: 'system'
-        }
-      ]
     }
     template: {
       containers: [
